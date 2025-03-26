@@ -1,19 +1,59 @@
 const jwt = require("jsonwebtoken");
-const asyncHandler = require("express-async-handler");
-const { findUserById } = require("../repositories/userRepository");
+const { PrismaClient } = require("@prisma/client");
 
-const protect = asyncHandler(async (req, res, next) => {
-  let token = req.headers.authorization;
-  if (!token || !token.startsWith("Bearer ")) return res.status(401).json({ message: "Not authorized, no token" });
+const prisma = new PrismaClient();
 
-  try {
-    const decoded = jwt.verify(token.split(" ")[1], process.env.JWT_SECRET);
-    req.user = await findUserById(decoded.id);
-    if (!req.user) throw new Error("User not found");
-    next();
-  } catch (error) {
-    res.status(401).json({ message: "Not authorized, invalid token" });
-  }
-});
+// Protect routes - Verify JWT token
+const protect = async (req, res, next) => {
+    let token;
 
-module.exports = { protect };
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+        try {
+            // Get token from header
+            token = req.headers.authorization.split(" ")[1];
+
+            // Verify token
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            // Get user from database
+            const user = await prisma.user.findUnique({
+                where: { id: decoded.id },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    isVerified: true
+                }
+            });
+
+            if (!user) {
+                res.status(401).json({ message: "User not found" });
+                return;
+            }
+
+            // Add user to request object
+            req.user = user;
+            next();
+        } catch (error) {
+            console.error("Auth middleware error:", error);
+            res.status(401).json({ message: "Not authorized, invalid token" });
+        }
+    } else {
+        res.status(401).json({ message: "Not authorized, no token" });
+    }
+};
+
+// Role-based authorization
+const authorize = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ 
+                message: `Role ${req.user.role} is not authorized to access this route`
+            });
+        }
+        next();
+    };
+};
+
+module.exports = { protect, authorize };

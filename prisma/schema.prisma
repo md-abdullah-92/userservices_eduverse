@@ -8,18 +8,21 @@ datasource db {
 }
 
 model User {
-  id            Int    @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   name          String
-  email         String @unique
-  password      String?
-  role          Role   @default(STUDENT)
-  isVerified    Boolean @default(false)
-  verificationToken String?
-  provider      String? // For OAuth
+  email         String   @unique
+  password      String?  // Nullable for OAuth users
+  role          Role     @default(STUDENT)
+  isVerified    Boolean  @default(false)
+  otp           String?  // OTP for email verification
+  otpExpiresAt  DateTime? // OTP expiry time
+  provider      String?  // OAuth provider (e.g., "google", "github")
+  oauthId       String?  // OAuth user ID
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum Role {
   STUDENT
   TEACHER
-  ADMIN
 }

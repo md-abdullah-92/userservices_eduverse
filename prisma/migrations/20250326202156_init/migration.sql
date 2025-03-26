@@ -6,8 +6,12 @@ CREATE TABLE `User` (
     `password` VARCHAR(191) NULL,
     `role` ENUM('STUDENT', 'TEACHER', 'ADMIN') NOT NULL DEFAULT 'STUDENT',
     `isVerified` BOOLEAN NOT NULL DEFAULT false,
-    `verificationToken` VARCHAR(191) NULL,
+    `otp` VARCHAR(191) NULL,
+    `otpExpiresAt` DATETIME(3) NULL,
     `provider` VARCHAR(191) NULL,
+    `oauthId` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `User_email_key`(`email`),
     PRIMARY KEY (`id`)
